@@ -1,0 +1,14 @@
+#!/bin/bash
+###########
+
+read LINE
+CODE=$(curl -ILkfs "$LINE" -w "%{http_code}" -o /dev/null)
+case $CODE in
+	200|212)
+		echo 1
+	;;
+	*)
+		echo 0
+	;;
+esac
+
