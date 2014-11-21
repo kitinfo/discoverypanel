@@ -4,42 +4,46 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <pthread.h>
+#include <ctype.h>
 #include "sqlite_conn.h"
+#include "parse.h"
 
 int QUIT = 0;
-
+char* tree = NULL;
 void updater_quit() {
 	QUIT = 1;
 }
 
-void run() {
-	sqlite_service_connect();
-
-	while (!QUIT) {
-
-		getAllHosts();
-
-	}
-	sqlite_service_close();
+void setTree(char* id) {
+	tree = id;
 }
 
-int main(argc, argv) {
+void setSingle() {
+	QUIT = 1;
+}
+
+void* run() {
+	sqlite_service_connect();
+
+	do {
+		check(tree);
+	} while (!QUIT);
+	sqlite_service_close();
+
+	return (void*)0;
+}
+
+int main(int argc, char* argv[]) {
 	
-//	parseArguments(argc, argv);
+	setDatabasePath("updater.db3");
+	parseArguments(argc, argv);
 
-	setDatabasePath("update.db3");
+	pthread_t pid = 0;
+	pthread_create(&pid, NULL, run, NULL);
 
-	run();
-
-//	pthread_t pid = 0;
-
-//	pthread_create(&pid, NULL, run, NULL);
-
-
-//	signal(SIGHUP, force_refresh);
 	signal(SIGQUIT, updater_quit);
 
-//	pthread_join(pid, NULL);
-
+	pthread_join(pid, NULL);
+	free_database_path();
 	return 0;
 }
