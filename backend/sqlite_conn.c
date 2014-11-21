@@ -164,7 +164,7 @@ void check_online_files(int tree_id, const char* baseurl) {
 	sqlite3_finalize(stmt);
 }
 
-void check_online_host(int id, const char* baseurl) {
+void check_online_host(int id, const char* baseurl, quick) {
 
 	const char* file = "";
 
@@ -178,12 +178,15 @@ void check_online_host(int id, const char* baseurl) {
 	update_host(sid, status);
 
 	if (status == 200 || status == 212) {
-		check_online_files(id, baseurl);
+
+		if (!quick) {
+			check_online_files(id, baseurl);
+		}
 	}
 
 }
 
-void check(char* tree_id) {
+void check(char* tree_id, int quick) {
 
 	if (db == NULL) {
 		sqlite_service_connect();
@@ -242,7 +245,7 @@ void check(char* tree_id) {
 		const char* baseurl = (const char*) sqlite3_column_text(stmt, baseurl_i);
 		printf("DEBUG: %s\n", baseurl);
 		int id = sqlite3_column_int(stmt, id_i);
-		check_online_host(id, baseurl);
+		check_online_host(id, baseurl, quick);
 		
 		rc = sqlite3_step(stmt);
 	}
