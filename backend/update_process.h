@@ -2,3 +2,4 @@
 
 void setTree(char* id);
 void setSingle();
+void setQuick();

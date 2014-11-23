@@ -19,6 +19,8 @@ void parseArguments(int argc, char* argv[]) {
                 i++;
             }  else if (!strcmp(argv[i], "--single") || !strcmp(argv[i], "-s")) {
                 setSingle();
+            }  else if (!strcmp(argv[i], "--quick") || !strcmp(argv[i], "-q")) {
+                setQuick();
             }  else if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "-h")) {
                 print_help();
             } else if (i + 1 < argc && (!strcmp(argv[i], "--database") || !strcmp(argv[i], "-b"))) {

@@ -9,6 +9,7 @@
 #include "parse.h"
 
 int QUIT = 0;
+int QUICK = 0;
 char* tree = NULL;
 void updater_quit() {
 	QUIT = 1;
@@ -22,11 +23,15 @@ void setSingle() {
 	QUIT = 1;
 }
 
+void setQuick() {
+	QUICK = 1;
+}
+
 void* run() {
 	sqlite_service_connect();
 
 	do {
-		check(tree);
+		check(tree, QUICK);
 	} while (!QUIT);
 	sqlite_service_close();
 

@@ -35,6 +35,17 @@ void sqlite_service_connect() {
 		printf("ERROR: %s\n", sqlite3_errmsg(db));	
 		exit(1);
 	}
+
+	sqlite3_stmt* stmt;
+
+	const char* sql = "PRAGMA foreign_keys = ON";
+	rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+
+	if (rc != SQLITE_OK) {
+		return;
+	}
+
+	sqlite3_step(stmt);
 }
 
 void sqlite_service_close() {
@@ -98,13 +109,13 @@ void check_online_file(int id, const char* baseurl, const char* path) {
 	update_file(id, status);
 }
 
-void check_online_files(int host_id, const char* baseurl) {
+void check_online_files(int tree_id, const char* baseurl) {
 
 	if (db == NULL) {
 		sqlite_service_connect();
 	}
 
-	const char* sql = "SELECT id, path FROM files WHERE host = :host";
+	const char* sql = "SELECT file_id, path FROM files WHERE tree_id = :tree";
 
 	sqlite3_stmt* stmt;
 
@@ -114,9 +125,9 @@ void check_online_files(int host_id, const char* baseurl) {
 		return;
 	}
 
-	int host_index = 0;
-	host_index = sqlite3_bind_parameter_index(stmt, ":host");
-	sqlite3_bind_int(stmt, host_index, host_id);
+	int tree_index = 0;
+	tree_index = sqlite3_bind_parameter_index(stmt, ":tree");
+	sqlite3_bind_int(stmt, tree_index, tree_id);
 
 	rc = sqlite3_step(stmt);
 
@@ -134,7 +145,7 @@ void check_online_files(int host_id, const char* baseurl) {
 	for (; i < count; i++) {
 		const char* out = sqlite3_column_name(stmt, i);
 
-		if (!strcmp(out, "id")) {
+		if (!strcmp(out, "tree_id")) {
 			id_i = i;
 		} else if (!strcmp(out, "path")) {
 			path_i = i;
@@ -153,7 +164,7 @@ void check_online_files(int host_id, const char* baseurl) {
 	sqlite3_finalize(stmt);
 }
 
-void check_online_host(int id, const char* baseurl) {
+void check_online_host(int id, const char* baseurl, quick) {
 
 	const char* file = "";
 
@@ -167,12 +178,15 @@ void check_online_host(int id, const char* baseurl) {
 	update_host(sid, status);
 
 	if (status == 200 || status == 212) {
-		check_online_files(id, baseurl);
+
+		if (!quick) {
+			check_online_files(id, baseurl);
+		}
 	}
 
 }
 
-void check(char* tree_id) {
+void check(char* tree_id, int quick) {
 
 	if (db == NULL) {
 		sqlite_service_connect();
@@ -180,9 +194,9 @@ void check(char* tree_id) {
 	const char* sql;
 	if (tree_id == NULL) {
 
-		sql = "SELECT id, host FROM hosts";
+		sql = "SELECT id, base FROM trees";
 	} else {
-		sql = "SELECT id, host FROM hosts WHERE id = :id"; 
+		sql = "SELECT id, base FROM trees WHERE id = :id"; 
 	}
 	sqlite3_stmt* stmt;
 
@@ -219,7 +233,7 @@ void check(char* tree_id) {
 		const char* out;
 		out = sqlite3_column_name(stmt,i);
 		printf("DEBUG: out = %s\n", out);
-		if (!strcmp(out, "host")) {
+		if (!strcmp(out, "base")) {
 			baseurl_i = i;
 		} else if (!strcmp(out, "id")) {
 			id_i = i;
@@ -231,7 +245,7 @@ void check(char* tree_id) {
 		const char* baseurl = (const char*) sqlite3_column_text(stmt, baseurl_i);
 		printf("DEBUG: %s\n", baseurl);
 		int id = sqlite3_column_int(stmt, id_i);
-		check_online_host(id, baseurl);
+		check_online_host(id, baseurl, quick);
 		
 		rc = sqlite3_step(stmt);
 	}
