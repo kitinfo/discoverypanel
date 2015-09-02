@@ -42,10 +42,14 @@ function main() {
 		if (!isset($obj["base"])) {
 			$output->add("status", "We need a base.");
 		} else {
-
-			$sql = "INSERT INTO trees (base) VALUES (:base)";
+			$comment = "";
+			if (isset($obj["comment"]) && !empty($obj["comment"])) {
+				$comment = $obj["comment"];
+			}
+			$sql = "INSERT INTO trees (base, comment) VALUES (:base, :comment)";
 			$params = [
-				":base" => $obj["base"]
+				":base" => $obj["base"],
+				":comment" => $comment
 			];
 
 			$output->add("add_tree", $db->insert($sql, [$params]));

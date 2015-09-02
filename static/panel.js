@@ -16,6 +16,7 @@ panel = {
 				var basetd = gui.create("td");
 				basetd.appendChild(gui.createLink(tree.base, tree.base));
 				row.appendChild(basetd);
+				row.appendChild(gui.createColumn(tree.comment));
 				row.appendChild(gui.createColumn(tree.status));
 			
 				tbody.appendChild(row);

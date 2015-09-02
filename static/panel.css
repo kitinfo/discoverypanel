@@ -76,8 +76,13 @@ table {
 	height: 4em;
 }
 
-#tree_field {
-	width: 70%;
+label {
+	width: 100%;
+	display: inline-block;
+}
+
+#tree_field, #tree_comment {
+	width: 100%;
 	padding: 1em;
 }
 

@@ -30,7 +30,7 @@
 			<table>
 				<thead>
 					<tr>
-						<td>Base</td><td>Status</td>
+						<th>Base</th><th>Comment</th><th>Status</th>
 				</thead>
 
 				<tbody id="trees_body">
@@ -49,9 +49,13 @@
 					<label>URL: 
 						<input type="text" id="tree_field" placeholder="URL of your server" />
 					</label>
-					<div class="separator"></div>
-					<span class="button" onclick="panel.add_tree();">Add</span>
-					<span class="button" onclick="panel.hide_add_tree();">Cancel</span>
+					<br /><br />
+					<label>Comment:
+						<input type="text" id="tree_comment" placeholder="What's there?" />
+					</label>
+					<div class="seperator"></div>
+					<span class="button" onclick="panel.add_tree()">Add</span>
+					<span class="button" onclick="panel.hide_add_tree()">Cancel</span>
 				<div>
 			</div>
 		</div>
