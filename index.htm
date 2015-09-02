@@ -22,7 +22,7 @@
 			<div class="head-block">
 				<a href="#" class="button" onclick="panel.show_add_tree()">Add Tree</a>
 			</div>
-			<div class="head-block">
+			<div class="head-block left-top">
 				<span id="status_box">ok</span>
 			</div>
 		</div>
@@ -42,14 +42,17 @@
 		<script src="static/panel.js"></script>
 
 		<div class="dialog" id="add_tree">
-			<div>
-				<div class="dialog-block">
+			<div class="black-background" onclick="panel.hide_add_tree()">
+			</div>
+			<div class="dialog-block">
+				<div>
 					<label>URL: 
 						<input type="text" id="tree_field" placeholder="Insert tree" />
 					</label>
 					<div class="seperator"></div>
 					<span class="button" onclick="panel.add_tree()">Add</span>
-				</div>
+					<span class="button" onclick="panel.hide_add_tree()">Cancel</span>
+				<div>
 			</div>
 		</div>
 
