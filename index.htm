@@ -9,7 +9,7 @@
 		<meta name="description" content="Discovery Panel - Search, find and download" />
 		<meta name="robots" content="index,nofollow" />
 	</head>
-	<body>
+	<body onload="panel.init();">
 		<div class="head-segment">
 			<div class="head-block">
 				Discovery<br/>
@@ -20,7 +20,7 @@
 				<input type="submit" value="search" />
 				</div> -->
 			<div class="head-block">
-				<a href="#" class="button" onclick="panel.show_add_tree()">Add Tree</a>
+				<a href="#" class="button" onclick="panel.show_add_tree();">Add Tree</a>
 			</div>
 			<div class="head-block left-top">
 				<span id="status_box">ok</span>
@@ -42,22 +42,18 @@
 		<script src="static/panel.js"></script>
 
 		<div class="dialog" id="add_tree">
-			<div class="black-background" onclick="panel.hide_add_tree()">
+			<div class="black-background" onclick="panel.hide_add_tree();">
 			</div>
 			<div class="dialog-block">
 				<div>
 					<label>URL: 
-						<input type="text" id="tree_field" placeholder="Insert tree" />
+						<input type="text" id="tree_field" placeholder="URL of your server" />
 					</label>
-					<div class="seperator"></div>
-					<span class="button" onclick="panel.add_tree()">Add</span>
-					<span class="button" onclick="panel.hide_add_tree()">Cancel</span>
+					<div class="separator"></div>
+					<span class="button" onclick="panel.add_tree();">Add</span>
+					<span class="button" onclick="panel.hide_add_tree();">Cancel</span>
 				<div>
 			</div>
 		</div>
-
-		<script>
-			window.onload = panel.init;
-		</script>
 	</body>
 </html>
