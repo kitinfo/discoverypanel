@@ -1,3 +1,4 @@
 #pragma once
+#include "logger.h"
 
-int check_online(const char* host, const char* file);
+int check_online(LOGGER log, const char* host, const char* file);

@@ -15,28 +15,46 @@
 				Discovery<br/>
 				Panel 
 			</div>
-			<div class="head-block">
+			<!--<div class="head-block">
 				<input id="head-search" type="text" placeholder="Search..." />
 				<input type="submit" value="search" />
+				</div> -->
+			<div class="head-block">
+				<a href="#" class="button" onclick="panel.show_add_tree()">Add Tree</a>
 			</div>
 			<div class="head-block">
-				<a href="#" class="button">Add Files</a>
+				<span id="status_box">ok</span>
 			</div>
 		</div>
 		<div id="results">
-			Results go here<br/>
-			Results go here<br/>
-			Results go here<br/>
-			Results go here<br/>
-			Results go here<br/>
-			Results go here<br/>
-			Results go here<br/>
-			Results go here<br/>
-			Results go here<br/>
-			Results go here<br/>
-			Results go here<br/>
-			Results go here<br/>
-			Results go here<br/>
+			<table>
+				<thead>
+					<tr>
+						<td>Base</td><td>Status</td>
+				</thead>
+
+				<tbody id="trees_body">
+				</tbody>
+			</table>
 		</div>
+
+		<script src="static/common.js"></script>
+		<script src="static/panel.js"></script>
+
+		<div class="dialog" id="add_tree">
+			<div>
+				<div class="dialog-block">
+					<label>URL: 
+						<input type="text" id="tree_field" placeholder="Insert tree" />
+					</label>
+					<div class="seperator"></div>
+					<span class="button" onclick="panel.add_tree()">Add</span>
+				</div>
+			</div>
+		</div>
+
+		<script>
+			window.onload = panel.init;
+		</script>
 	</body>
 </html>

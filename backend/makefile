@@ -1,7 +1,14 @@
-.PHONY: all
+.PHONY: all updater clean
 
-all:
-	$(CC) -Wall -l sqlite3 -l curl -l pthread -o updater update_process.c sqlite_conn.c curl_conn.c parse.c
+CARGS=-Wall -g
+LDLIBS=-lsqlite3 -lcurl
 
-debug:
-	$(CC) -Wall -l sqlite3 -l curl -l pthread -o updater -g update_process.c sqlite_conn.c curl_conn.c parse.c
+all: updater
+
+updater: 
+	$(CC) $(CARGS) $(LDLIBS) update_process.c sqlite_conn.c curl_conn.c easy_args.c logger.c
+	mv a.out updater
+
+clean:
+	$(RM) update_process
+

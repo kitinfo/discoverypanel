@@ -3,72 +3,103 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "curl_conn.h"
+#include "logger.h"
 
-void debug(char* msg) {
-	printf("DEBUG: %s\n", msg);
-}
+sqlite3_stmt* stmt_select_trees = NULL;
+sqlite3_stmt* stmt_select_tree = NULL;
+sqlite3_stmt* stmt_update_tree_node = NULL;
+sqlite3_stmt* stmt_update_file = NULL;
+sqlite3_stmt* stmt_select_files = NULL;
 
-char* path = NULL;
-sqlite3* db = NULL;
-
-void free_database_path() {
-	if (path != NULL) {
-		free(path);
-	}
-}
-
-void setDatabasePath(char* dbpath) {
-
-	free_database_path();
-	path = malloc(strlen(dbpath) + 1);
-
-	strcpy(path, dbpath);
-	debug(path);
-}
-
-void sqlite_service_connect() {
-
-	int rc;
-	rc = sqlite3_open_v2(path, &db, SQLITE_OPEN_READWRITE, NULL);
-
-	if (rc != SQLITE_OK) {
-		printf("ERROR: %s\n", sqlite3_errmsg(db));	
-		exit(1);
-	}
-
-	sqlite3_stmt* stmt;
-
-	const char* sql = "PRAGMA foreign_keys = ON";
-	rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
-
-	if (rc != SQLITE_OK) {
-		return;
-	}
-
-	sqlite3_step(stmt);
-}
-
-void sqlite_service_close() {
+void sqlite_service_close(sqlite3* db) {
 
 	sqlite3_close(db);
-	db = NULL;
 }
 
+sqlite3_stmt* database_prepare(LOGGER log, sqlite3* conn, char* query){
+        int status;
+        sqlite3_stmt* target=NULL;
 
-void update(char* id, const char* sql, int status_code) {
+        status=sqlite3_prepare_v2(conn, query, strlen(query), &target, NULL);
 
-	if (db == NULL) {
-		sqlite_service_connect();
+        switch(status){
+                case SQLITE_OK:
+                        logprintf(log, LOG_DEBUG, "Statement (%s) compiled ok\n", query);
+                        return target;
+                default:
+                        logprintf(log, LOG_ERROR, "Failed to prepare statement (%s): %s\n", query, sqlite3_errmsg(conn));
+        }
+
+        return NULL;
+}
+
+int prepare_statements(LOGGER log, sqlite3* db) {
+	
+	stmt_select_files = database_prepare(log, db, "SELECT file_id, path FROM files WHERE tree_id = :tree");
+	stmt_select_trees = database_prepare(log, db, "SELECT id, base FROM trees");
+	stmt_select_tree = database_prepare(log, db, "SELECT id, base FROM trees WHERE id = :id");
+	stmt_update_file = database_prepare(log, db, "UPDATE OR REPLACE files SET status = :status WHERE file_id = :id");
+	stmt_update_tree_node = database_prepare(log, db, "UPDATE OR REPLACE trees SET status = :status WHERE id = :id");
+
+	return 0;
+}
+
+void finalize_statement(LOGGER log, sqlite3_stmt* stmt) {
+	if (stmt) {
+		sqlite3_finalize(stmt);
+	}
+}
+
+int finalize_statements(LOGGER log) {
+	finalize_statement(log, stmt_select_trees);
+	finalize_statement(log, stmt_select_tree);
+	finalize_statement(log, stmt_update_tree_node);
+	finalize_statement(log, stmt_update_file);
+	finalize_statement(log, stmt_select_files);
+
+	return 0;
+}
+
+sqlite3* sqlite_service_connect(LOGGER log, char* dbpath) {
+
+	sqlite3* db;
+	int rc;
+
+	if (!dbpath || strlen(dbpath) < 1) {
+		logprintf(log, LOG_ERROR, "No database path provided\n");
+		return NULL;
 	}
 
-	sqlite3_stmt* stmt;
-
-	int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+	rc = sqlite3_open_v2(dbpath, &db, SQLITE_OPEN_READWRITE, NULL);
 
 	if (rc != SQLITE_OK) {
-		debug("ERROR on prepared Statement: update");
+		logprintf(log, LOG_ERROR, "%s\n", sqlite3_errmsg(db));	
+		return NULL;
+	}
+
+	const char* sql = "PRAGMA foreign_keys = ON";
+	
+	switch(sqlite3_exec(db, sql, NULL, NULL, NULL)) {
+		case SQLITE_OK:
+		case SQLITE_DONE:
+			break;
+		default:
+			logprintf(log, LOG_ERROR, "Cannot enable foreign key support (%s).\n", sqlite3_errmsg(db));
+			sqlite_service_close(db);
+			return NULL;
+	}
+
+	prepare_statements(log, db);
+
+	return db;
+}
+
+void update(LOGGER log, sqlite3* db, char* id, sqlite3_stmt* stmt, int status_code) {
+
+	if (!db) {
 		return;
 	}
+
 	int id_index, status_code_index = 0;
 
 	id_index = sqlite3_bind_parameter_index(stmt, ":id");
@@ -79,51 +110,40 @@ void update(char* id, const char* sql, int status_code) {
 
 
 	sqlite3_step(stmt);
-
-	sqlite3_finalize(stmt);
+	sqlite3_reset(stmt);
+	sqlite3_clear_bindings(stmt);
 }
 
-void update_host(char* id, int status_code) {
+void update_host(LOGGER log, sqlite3* db, char* id, int status_code) {
 
-	const char* sql = "UPDATE OR REPLACE hosts SET status = :status WHERE id = :id";
-	update(id, sql, status_code);
+	update(log, db, id, stmt_update_tree_node, status_code);
 }
 
-void update_file(int id, int status_code) {
+void update_file(LOGGER log, sqlite3* db, int id, int status_code) {
 
-	const char* sql = "UPDATE OR REPLACE files SET status = :status WHERE id = :id ";
-	
 	char sid[sizeof(id)];
 	sprintf(sid, "%d", id);
-	update(sid, sql, status_code);
+	update(log, db, sid, stmt_update_file, status_code);
 }
 
-void check_online_file(int id, const char* baseurl, const char* path) {
-	printf("DEBUG: %s\n",baseurl);
-	printf("DEBUG: %s\n",path);
+void check_online_file(LOGGER log, sqlite3* db, int id, const char* baseurl, const char* path) {
+	logprintf(log, LOG_INFO, "baseurl: %s\n",baseurl);
+	logprintf(log, LOG_INFO, "path: %s\n",path);
 	
-	int status = check_online(baseurl, path);
+	int status = check_online(log, baseurl, path);
 
-	printf("HTTP-STATUS file (%s%s): %d\n", baseurl, path, status);
+	logprintf(log, LOG_DEBUG, "HTTP-STATUS file (%s%s): %d\n", baseurl, path, status);
 
-	update_file(id, status);
+	update_file(log, db, id, status);
 }
 
-void check_online_files(int tree_id, const char* baseurl) {
+void check_online_files(LOGGER log, sqlite3* db, int tree_id, const char* baseurl) {
 
-	if (db == NULL) {
-		sqlite_service_connect();
-	}
-
-	const char* sql = "SELECT file_id, path FROM files WHERE tree_id = :tree";
-
-	sqlite3_stmt* stmt;
-
-	int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
-
-	if (rc != SQLITE_OK) {
+	if (!db) {
 		return;
 	}
+	int rc;
+	sqlite3_stmt* stmt = stmt_select_files;
 
 	int tree_index = 0;
 	tree_index = sqlite3_bind_parameter_index(stmt, ":tree");
@@ -132,7 +152,7 @@ void check_online_files(int tree_id, const char* baseurl) {
 	rc = sqlite3_step(stmt);
 
 	if (rc == SQLITE_DONE) {
-		debug("No rows found in files for given id");
+		logprintf(log, LOG_WARNING, "No rows found in files for given id\n");
 		return;
 	}
 
@@ -156,72 +176,66 @@ void check_online_files(int tree_id, const char* baseurl) {
 		const char* path = (const char*) sqlite3_column_text(stmt, path_i);
 		int file_id = sqlite3_column_int(stmt, id_i);
 
-		check_online_file(file_id, baseurl, path);
+		check_online_file(log, db, file_id, baseurl, path);
 
 		rc = sqlite3_step(stmt);
 	}
-
-	sqlite3_finalize(stmt);
+	
+	sqlite3_reset(stmt);
+	sqlite3_clear_bindings(stmt);
 }
 
-void check_online_host(int id, const char* baseurl, quick) {
+void check_online_host(LOGGER log, sqlite3* db, int id, const char* baseurl, int quick) {
 
 	const char* file = "";
 
-	int status = check_online(baseurl, file);
+	int status = check_online(log, baseurl, file);
 
-	printf("HTTP-STATUSi host: %d\n",status);
+	logprintf(log, LOG_DEBUG, "HTTP-STATUS host: %d\n",status);
 
 	char sid[sizeof(id)];
 	sprintf(sid, "%d", id);
 
-	update_host(sid, status);
+	update_host(log, db, sid, status);
 
 	if (status == 200 || status == 212) {
 
 		if (!quick) {
-			check_online_files(id, baseurl);
+			check_online_files(log, db, id, baseurl);
 		}
 	}
 
 }
 
-void check(char* tree_id, int quick) {
+int check(LOGGER log, sqlite3* db, char* tree_id, int quick) {
 
-	if (db == NULL) {
-		sqlite_service_connect();
+	// check database connection
+	if (!db) {
+		logprintf(log, LOG_ERROR, "No database connection provided.\n");
+		return -1;
 	}
-	const char* sql;
-	if (tree_id == NULL) {
+	int rc;
+	
+	sqlite3_stmt* stmt = stmt_select_trees;
 
-		sql = "SELECT id, base FROM trees";
-	} else {
-		sql = "SELECT id, base FROM trees WHERE id = :id"; 
-	}
-	sqlite3_stmt* stmt;
-
-	int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
-
-	if (rc != SQLITE_OK) {
-		debug("ERROR on prepared Satement: get_all_hosts");
-	}
-
-	if (tree_id != NULL) {
+	if (!tree_id) {	
+		stmt = stmt_select_tree;
 		int tree_index = sqlite3_bind_parameter_index(stmt, ":id");
 		sqlite3_bind_text(stmt, tree_index, tree_id, -1, NULL);
 	}
-
-
+	
 	rc = sqlite3_step(stmt);
 	
+	
+	// no hosts
 	if (rc == SQLITE_DONE) {
-		debug("WARNING: no rows found in hosts");
-		return;
+		logprintf(log, LOG_WARNING, "No hosts in database\n");
+		return 0;
 	}
 
-
 	if (rc != SQLITE_ROW) {
-		return;
+		logprintf(log, LOG_ERROR, "Error in getting hosts from database (%s)\n", sqlite3_errmsg(db));
+		return -1;
 	}
 
 	int i = 0;
@@ -232,7 +246,7 @@ void check(char* tree_id, int quick) {
 	for (;i < count; i++) {
 		const char* out;
 		out = sqlite3_column_name(stmt,i);
-		printf("DEBUG: out = %s\n", out);
+		logprintf(log, LOG_INFO, "out = %s\n", out);
 		if (!strcmp(out, "base")) {
 			baseurl_i = i;
 		} else if (!strcmp(out, "id")) {
@@ -243,12 +257,15 @@ void check(char* tree_id, int quick) {
 	while (rc == SQLITE_ROW) {
 		
 		const char* baseurl = (const char*) sqlite3_column_text(stmt, baseurl_i);
-		printf("DEBUG: %s\n", baseurl);
+		logprintf(log, LOG_INFO, "baseurl: %s\n", baseurl);
 		int id = sqlite3_column_int(stmt, id_i);
-		check_online_host(id, baseurl, quick);
+		check_online_host(log, db, id, baseurl, quick);
 		
 		rc = sqlite3_step(stmt);
 	}
 
-	sqlite3_finalize(stmt);
+	sqlite3_reset(stmt);
+	sqlite3_clear_bindings(stmt);
+
+	return 0;
 }
