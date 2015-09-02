@@ -28,7 +28,8 @@ panel = {
 	},
 	add_tree: function() {
 		var obj = {
-			base: gui.elem("tree_field").value
+			base: gui.elem("tree_field").value,
+			comment: gui.elem("tree_comment").value
 		};
 
 		if (obj.base == "") {
