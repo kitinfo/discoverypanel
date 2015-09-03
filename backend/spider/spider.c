@@ -9,6 +9,7 @@
 
 #include "../lib/easy_args.h"
 #include "../lib/logger.h"
+
 #include "../lib/sqlite_helper.h"
 
 #include "sqlite_conn.h"
@@ -18,7 +19,6 @@
 int QUIT = 0;
 
 struct config {
-	int quick;
 	int single;
 	int verbosity;
 	int sleep;
@@ -44,14 +44,6 @@ int setDBPath(int argc, char** argv, void* c) {
 	return 0;
 }
 
-int setTree(int argc, char** argv, void* c) {
-	struct config* config = (struct config*) c;
-
-	config->tree = argv[1];
-
-	return 0;
-}
-
 int setSingle(int argc, char** argv, void* c) {
 	struct config* config = (struct config*) c;
 	config->single = 1;
@@ -59,17 +51,9 @@ int setSingle(int argc, char** argv, void* c) {
 	return 0;
 }
 
-int setQuick(int argc, char** argv, void* c) {
-
-	struct config* config = (struct config*) c;
-
-	config->quick = 1;
-
-	return 0;
-}
-
 int run(LOGGER log, struct config config) {
 	sqlite3* db = sqlite_service_connect(log, config.dbpath);
+	
 
 	if (!db) {
 		return 1;
@@ -80,7 +64,7 @@ int run(LOGGER log, struct config config) {
 	}
 	
 	do {
-		check(log, db, config.tree, config.quick);
+		spider(log, db);
 		sleep(config.sleep);
 	} while (!QUIT);
 	finalize_statements(log);
@@ -92,9 +76,7 @@ int run(LOGGER log, struct config config) {
 int usage(int argc, char** argv, void* c) {
 	printf("usage:\n");
 	printf("%s [<options>]\n", PROGRAM_NAME);
-	printf("-t, --tree\t\tCheck only given tree.\n");
 	printf("-h, --help\t\tShow this help.\n");
-	printf("-q --quick\t\tOnly check if host is up.\n");
 	printf("-s --single\t\tCheck only one time.\n");
 	printf("-w --wait\t\tSets the wait time for each cycle.\n");
 	printf("-d --dbpath\t\tDatabase path.\n");
@@ -111,8 +93,6 @@ int setVerbosity(int argc, char** argv, void* c) {
 int addArgs() {
 	
 	eargs_addArgument("-d", "--dbpath", setDBPath, 1);
-	eargs_addArgument("-t", "--tree", setTree, 1);
-	eargs_addArgument("-q", "--quick", setQuick, 0);
 	eargs_addArgument("-s", "--single", setSingle, 0);
 	eargs_addArgument("-h", "--help", usage, 0);
 	eargs_addArgument("-v", "--verbosity", setVerbosity, 1);
@@ -126,8 +106,6 @@ int main(int argc, char* argv[]) {
 	addArgs();
 
 	struct config config = {
-		.quick = 0,
-		.single = 0,
 		.verbosity = 0,
 		.sleep = 60,
 		.dbpath = "",
@@ -136,9 +114,7 @@ int main(int argc, char* argv[]) {
 
 	char* output[argc];
 
-	if (eargs_parse(argc, argv, output, &config) < 0) {	
-		return 1;
-	}
+	eargs_parse(argc, argv, output, &config);
 
 	LOGGER log = {
 		.stream = stderr,
