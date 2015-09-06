@@ -99,7 +99,6 @@ int handle_dir(struct request_config* rc, char* path) {
 
 int ignore_link(char* link) {
 
-
 	// parent directory
 	if (!strcmp(link, "../")) {
 		return 1;
@@ -116,7 +115,7 @@ int ignore_link(char* link) {
 	}
 
 	// root directory (often parent)
-	if (!strcmp(link, "/")) {
+	if (link[0] == '/') {
 		return 1;
 	}
 
@@ -127,6 +126,11 @@ int ignore_link(char* link) {
 
 	// external link
 	if (strstr(link, "://")) {
+		return 1;
+	}
+
+	// anker link
+	if (link[0] == '#') {
 		return 1;
 	}
 
