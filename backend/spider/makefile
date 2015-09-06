@@ -5,8 +5,8 @@ LDLIBS=-lsqlite3 -lcurl
 
 all: spider
 
-updater: 
-	$(CC) $(CARGS) $(LDLIBS) spider_process.c sqlite_conn.c curl_conn.c easy_args.c logger.c
+spider: 
+	$(CC) $(CARGS) $(LDLIBS) spider.c sqlite_conn.c ../lib/sqlite_helper.c ../lib/curl_conn.c ../lib/easy_args.c ../lib/logger.c
 	mv a.out spider
 
 clean:

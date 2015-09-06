@@ -46,9 +46,9 @@ int eargs_clearItem(struct ArgumentItem* item) {
 	// free when last item else recursive
 	if (item->next) {
 		eargs_clearItem(item->next);
-	} else {
-		free(item);
 	}
+
+	free(item);
 
 	return 1;
 }
@@ -58,10 +58,7 @@ int eargs_clear() {
 	// check if base is initialized.
 	if (base) {
 		// begin clearing
-		if (base->next) {
-			eargs_clearItem(base->next);
-		}
-		free(base);
+		eargs_clearItem(base);
 	}
 
 	return 1;

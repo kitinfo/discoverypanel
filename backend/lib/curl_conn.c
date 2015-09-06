@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include "logger.h"
 
-
 CURL* c_init(LOGGER log, const char* host, const char* path, int get_body) {
 	CURL* curl = curl_easy_init();
 
@@ -24,6 +23,7 @@ CURL* c_init(LOGGER log, const char* host, const char* path, int get_body) {
 
 	curl_easy_setopt(curl, CURLOPT_URL, url);
 	curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1);
+	curl_easy_setopt(curl, CURLOPT_USERAGENT, "libcurl-agent/1.0");
 	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
 	if (!get_body) {
 		curl_easy_setopt(curl, CURLOPT_NOBODY ,1 );
@@ -45,7 +45,7 @@ int curl_perform(LOGGER log, CURL* curl) {
 	return 1;
 }
 
-int get_request(LOGGER log, const char* host, const char* path) {
+int get_request(LOGGER log, const char* host, const char* path, void* write_func, void* data) {
 
 	CURL* curl = c_init(log, host, path, 1);
 
@@ -54,11 +54,15 @@ int get_request(LOGGER log, const char* host, const char* path) {
 	}
 
 	curl_easy_setopt(curl, CURLOPT_DIRLISTONLY, 1);
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_func);
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, data);
 
 	if (!curl_perform(log, curl)) {
 		curl_easy_cleanup(curl);
 		return 0;
 	}
+
+	curl_easy_cleanup(curl);
 
 	return 1;
 }

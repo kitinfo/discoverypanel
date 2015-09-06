@@ -6,6 +6,7 @@
 #include <pthread.h>
 #include <ctype.h>
 #include <sqlite3.h>
+#include <curl/curl.h>
 
 #include "../lib/easy_args.h"
 #include "../lib/logger.h"
@@ -22,8 +23,9 @@ struct config {
 	int single;
 	int verbosity;
 	int sleep;
+	int hash;
 	char* dbpath;
-	char* tree;
+	int tree;
 };
 
 void updater_quit() {
@@ -53,23 +55,30 @@ int setSingle(int argc, char** argv, void* c) {
 
 int run(LOGGER log, struct config config) {
 	sqlite3* db = sqlite_service_connect(log, config.dbpath);
-	
+
+	curl_global_init(CURL_GLOBAL_SSL);
 
 	if (!db) {
 		return 1;
+	}
+
+	if (config.single) {
+		QUIT = 1;
 	}
 	
 	if (prepare_statements(log, db)) {
 		return 2;
 	}
 	
-	do {
-		spider(log, db);
+	spider(log, db, config.hash, config.tree);
+	while(!QUIT) {
+		spider(log, db, config.hash, config.tree);
 		sleep(config.sleep);
-	} while (!QUIT);
+	}
 	finalize_statements(log);
 	sqlite_service_close(log, db);
 
+	curl_global_cleanup();
 	return 0;
 }
 
@@ -90,11 +99,28 @@ int setVerbosity(int argc, char** argv, void* c) {
 	return 0;
 }
 
+int setNoHash(int argc, char** argv, void* c) {
+	struct config* config = (struct config*) c;
+	config->hash = 0;
+
+	return 0;
+}
+
+int setTree(int argc, char** argv, void* c) {
+
+	struct config* config = (struct config*) c;
+	config->tree = strtoul(argv[1], NULL, 10);
+
+	return 0;
+}
+
 int addArgs() {
 	
 	eargs_addArgument("-d", "--dbpath", setDBPath, 1);
 	eargs_addArgument("-s", "--single", setSingle, 0);
 	eargs_addArgument("-h", "--help", usage, 0);
+	eargs_addArgument("-n", "--nohash", setNoHash, 0);
+	eargs_addArgument("-t", "--tree", setTree, 1);
 	eargs_addArgument("-v", "--verbosity", setVerbosity, 1);
 	eargs_addArgument("-w", "--wait", setSleep, 1);
 
@@ -106,10 +132,12 @@ int main(int argc, char* argv[]) {
 	addArgs();
 
 	struct config config = {
+		.single = 0,
 		.verbosity = 0,
 		.sleep = 60,
+		.hash = 1,
 		.dbpath = "",
-		.tree = ""
+		.tree = 0
 	};
 
 	char* output[argc];
@@ -121,7 +149,7 @@ int main(int argc, char* argv[]) {
 		.verbosity = config.verbosity
 	};
 
-	signal(SIGINT, updater_quit);
+	signal(SIGQUIT, updater_quit);
 	run(log, config);
 
 	return 0;
