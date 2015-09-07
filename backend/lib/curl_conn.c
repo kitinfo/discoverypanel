@@ -25,6 +25,7 @@ CURL* c_init(LOGGER log, const char* host, const char* path, int get_body) {
 	curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1);
 	curl_easy_setopt(curl, CURLOPT_USERAGENT, "libcurl-agent/1.0");
 	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
+	curl_easy_setopt(curl, CURLOPT_FAILONERROR, 1);
 	if (!get_body) {
 		curl_easy_setopt(curl, CURLOPT_NOBODY ,1 );
 	}
