@@ -13,7 +13,7 @@ main();
 
 function main() {
 
-	$dbpath = "../updater.db3";
+	$dbpath = "/var/db/apis/updater.db3";
 
 	// init
 	$output = Output::getInstance();
@@ -22,7 +22,6 @@ function main() {
 	// db connection
 	if (!$db->connect()) {
 		header("HTTP/1.0 500 Cannot connect to db");
-
 		die();
 	}
 
@@ -30,7 +29,7 @@ function main() {
 	$obj = json_decode($http_raw, true);
 
 	if (isset($_GET["files"])) {
-		$sql = "SELECT * FROM files JOIN trees ON (files.file_id = trees.id)";
+		$sql = "SELECT trees.base, files.path, group_concat(DISTINCT tags.tag_text) AS tags, files.status FROM files JOIN trees ON (files.tree_id = trees.id) JOIN tagmap ON (files.file_id = tagmap.file) JOIN tags ON (tagmap.tag = tags.tag_id) GROUP BY files.file_id;";
 
 		$output->add("files", $db->query($sql, [], DB::F_ARRAY));
 	} else if (isset($_GET["trees"])) {
@@ -55,7 +54,6 @@ function main() {
 			$output->add("add_tree", $db->insert($sql, [$params]));
 		}
 	}
-
 
 	$output->write();
 }
