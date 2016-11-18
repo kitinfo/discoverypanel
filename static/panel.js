@@ -10,11 +10,15 @@ panel = {
 		setInterval(panel.get_files, 5000);
 	},
 	get_files: function() {
-		ajax.asyncGet(panel.url + '?files', function(xhr) {
+		panel.fill_tags();
+		var file_filter = gui.elem('file_filter').value;
+		var tags_filter = gui.elem('tags_filter').value;
+		var status_filter = gui.elem('status_filter').value;
+		ajax.asyncGet(`${panel.url}?files&file=${file_filter}&tag=${tags_filter}&status=${status_filter}`, function(xhr) {
 			var files = JSON.parse(xhr.response).files;
 
 			var tbody = gui.elem("files_body");
-
+			tbody.innerHTML = '';
 			files.forEach(function(file) {
 				var row = gui.create('tr');
 				var linkElem = gui.create('td');
@@ -23,7 +27,7 @@ panel = {
 					link += '/';
 				}
 				link += file.path;
-				linkElem.appendChild(gui.createLink(link, link));
+				linkElem.appendChild(gui.createLink(decodeURI(link), link));
 				row.appendChild(linkElem);
 				var tags = gui.create('td');
 				tags.textContent = file.tags;
@@ -82,5 +86,20 @@ panel = {
 	show_add_tree: function() {
 		gui.elem("tree_field").value = "";
 		gui.elem("add_tree").style.display = "block";
+	},
+	fill_datalist: function(elem, values, key) {
+		elem.innerHTML = '';
+		values.forEach(function(value) {
+			elem.appendChild(gui.createOption('', value[key]));
+		});
+	},
+	fill_tags: function() {
+		var self = this;
+		var elem = gui.elem('tags_datalist');
+		ajax.asyncGet(`${panel.url}?tags`, function(xhr) {
+				var tags = JSON.parse(xhr.response).tags;
+
+				self.fill_datalist(elem, tags, 'tag_text');
+		});
 	}
 };

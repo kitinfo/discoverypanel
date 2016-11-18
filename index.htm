@@ -15,12 +15,16 @@
 				Discovery<br/>
 				Panel 
 			</div>
+			<div class="head-block">
+				<a href="#files">Files</a>
+				<a href="#trees">Trees</a>
+			</div>
 			<!--<div class="head-block">
 				<input id="head-search" type="text" placeholder="Search..." />
 				<input type="submit" value="search" />
 				</div> -->
 			<div class="head-block">
-				<a href="#" class="button" onclick="panel.show_add_tree();">Add Tree</a>
+				<a href="" class="button" onclick="panel.show_add_tree();">Add Tree</a>
 			</div>
 			<div class="head-block left-top">
 				<span id="status_box">ok</span>
@@ -28,13 +32,32 @@
 		</div>
 
 		<div id="files" class="tab">
+			<form onsubmit="panel.get_files();return false;">
 			<table>
 				<thead>
-					<th>File</th><th>Tags</th><th>Status</th>
+					<tr>
+						<th>File</th><th>Tags</th><th>Status</th>
+					</tr>
+					<tr>
+						<th>
+							<input type="text" id="file_filter" onchange="panel.get_files()" />
+						</th>
+						<th>
+							<datalist id="tags_datalist"></datalist>
+							<input type="text" list="tags_datalist" id="tags_filter" onchange="panel.get_files()" />
+						</th>
+						<th>
+							<select id="status_filter">
+								<option value="%">All</option>
+								<option value="2%">200</option>
+								<option value="4%">400</option>
+							</select>
+						</th>
+					</tr>
 				</thead>
 				<tbody id="files_body">
 			</table>
-
+			</form>
 		</div>
 		<div id="trees" class="tab">
 			<table>

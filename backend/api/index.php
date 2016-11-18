@@ -29,13 +29,23 @@ function main() {
 	$obj = json_decode($http_raw, true);
 
 	if (isset($_GET["files"])) {
-		$sql = "SELECT trees.base, files.path, group_concat(DISTINCT tags.tag_text) AS tags, files.status FROM files JOIN trees ON (files.tree_id = trees.id) JOIN tagmap ON (files.file_id = tagmap.file) JOIN tags ON (tagmap.tag = tags.tag_id) GROUP BY files.file_id;";
+		$params = [
+			':file' => empty($_GET['file']) ? '%' : "%{$_GET['file']}%",
+			':status' => empty($_GET['status']) ? '%' : $_GET['status'],
+			':tag' => empty($_GET['tag']) ? '%' : "%{$_GET['tag']}%"
+		];
+		$output->add('params', $params);
+		$sql = "SELECT trees.base, files.path, group_concat(DISTINCT tags.tag_text) AS tags, files.status FROM files JOIN trees ON (files.tree_id = trees.id) JOIN tagmap ON (files.file_id = tagmap.file) JOIN tags ON (tagmap.tag = tags.tag_id) WHERE tags.tag_text LIKE :tag AND files.status LIKE :status AND files.path LIKE :file GROUP BY files.file_id;";
 
-		$output->add("files", $db->query($sql, [], DB::F_ARRAY));
+		$output->add("files", $db->query($sql, $params, DB::F_ARRAY));
 	} else if (isset($_GET["trees"])) {
 		$sql = "SELECT * FROM trees";
 
 		$output->add("trees", $db->query($sql, [], DB::F_ARRAY));
+	} else if (isset($_GET['tags'])) {
+		$sql = "SELECT * FROM tags";
+
+		$output->add("tags", $db->query($sql, [], DB::F_ARRAY));
 	} else if (isset($_GET["add_tree"])) {
 
 		if (!isset($obj["base"])) {
