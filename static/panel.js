@@ -1,8 +1,40 @@
 panel = {
 	url: "//localhost/kitinfo/discoverypanel/backend/api/",
 	init: function() {
+		if (!window.location.hash || window.location.hash === '#') {
+			window.location.hash = '#files';
+		}
 		panel.get_trees();
+		panel.get_files();
 		setInterval(panel.get_trees, 5000);
+		setInterval(panel.get_files, 5000);
+	},
+	get_files: function() {
+		ajax.asyncGet(panel.url + '?files', function(xhr) {
+			var files = JSON.parse(xhr.response).files;
+
+			var tbody = gui.elem("files_body");
+
+			files.forEach(function(file) {
+				var row = gui.create('tr');
+				var linkElem = gui.create('td');
+				var link = file.base;
+				if (file.base[file.base.length -1] !== '/') {
+					link += '/';
+				}
+				link += file.path;
+				linkElem.appendChild(gui.createLink(link, link));
+				row.appendChild(linkElem);
+				var tags = gui.create('td');
+				tags.textContent = file.tags;
+				row.appendChild(tags);
+				var status = gui.create('td');
+				status.textContent = file.status;
+				row.appendChild(status);
+
+				tbody.appendChild(row);
+			});
+		});
 	},
 	get_trees: function() {
 		ajax.asyncGet(panel.url + "?trees", function(xhr) {
@@ -18,7 +50,7 @@ panel = {
 				row.appendChild(basetd);
 				row.appendChild(gui.createColumn(tree.comment));
 				row.appendChild(gui.createColumn(tree.status));
-			
+
 				tbody.appendChild(row);
 			});
 		});

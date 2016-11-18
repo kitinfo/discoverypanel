@@ -7,6 +7,12 @@ html, body{
 a{
 	text-decoration:none;
 }
+.tab {
+	display:none;
+}
+:target {
+	display: block;
+}
 
 .button{
 	padding:0.7em;
