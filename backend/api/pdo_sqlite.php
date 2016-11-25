@@ -76,6 +76,7 @@ class DB {
 
 		$this->query('PRAGMA foreign_keys = ON', [], null);
 		$this->query('PRAGMA busy_timeout = 1000', [], null);
+		$this->query('PRAGMA journal_mode = wal', [], null);
 
 		$this->output->addDebugMessage('db', 'connect call');
 		return true;
