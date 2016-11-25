@@ -13,6 +13,8 @@ sqlite3_stmt* stmt_select_tree;
 sqlite3_stmt* stmt_insert_tag;
 sqlite3_stmt* stmt_insert_tagmap;
 sqlite3_stmt* stmt_select_file_id;
+sqlite3_stmt* stmt_mark_spidered;
+
 struct tag {
 	char* tag;
 	struct tag* next;
@@ -41,7 +43,7 @@ int prepare_statements(LOGGER log, sqlite3* db) {
 	stmt_insert_file = database_prepare(log, db, "INSERT OR IGNORE INTO files (tree_id, path, status) VALUES(?, ?, ?)");
 	stmt_select_trees = database_prepare(log, db, "SELECT id, base, spidered FROM trees");
 	stmt_select_tree = database_prepare(log, db, "SELECT base FROM trees WHERE id = ?");
-	
+	stmt_mark_spidered = database_prepare(log, db, "UPDATE trees SET spidered = TRUE WHERE id = ?");
 	return 0;
 }
 
@@ -66,9 +68,8 @@ struct tag* copy_tags(struct tag* tags) {
 	while (curr) {
 
 		struct tag* o2 = (struct tag*) malloc(sizeof(struct tag));
-		o2->tag = malloc(strlen(curr->tag) + 1);
-		strcpy(o2->tag, curr->tag);
-		
+		o2->tag = strdup(curr->tag);
+
 		if (!o) {
 			output = o2;
 			o2->previous = NULL;
@@ -85,7 +86,7 @@ struct tag* copy_tags(struct tag* tags) {
 }
 
 int get_file_id(LOGGER log, int tree, char* path) {
-	
+
 	sqlite3_bind_text(stmt_select_file_id, 1, path, -1, NULL);
 	sqlite3_bind_int(stmt_select_file_id, 2, tree);
 
@@ -103,7 +104,6 @@ int get_file_id(LOGGER log, int tree, char* path) {
 	logprintf(log, LOG_DEBUG, "File found with id: %d\n", id);
 
 	return id;
-
 }
 
 int insert_tagmap(LOGGER log, sqlite3* db, int file, struct tag* tag) {
@@ -121,7 +121,7 @@ int insert_tagmap(LOGGER log, sqlite3* db, int file, struct tag* tag) {
 		if (sqlite3_step(stmt_insert_tagmap) != SQLITE_DONE) {
 			logprintf(log, LOG_INFO, "Error on inserting tagmap: %s", sqlite3_errmsg(db));
 		}
-		
+
 		sqlite3_reset(stmt_insert_tagmap);
 		sqlite3_clear_bindings(stmt_insert_tagmap);
 
@@ -132,7 +132,7 @@ int insert_tagmap(LOGGER log, sqlite3* db, int file, struct tag* tag) {
 }
 
 int insert_tag(LOGGER log, sqlite3* db, char* tag) {
-	logprintf(log, LOG_INFO, "Insert tag: %s\n", tag);
+	logprintf(log, LOG_DEBUG, "Insert tag: %s\n", tag);
 
 	sqlite3_bind_text(stmt_insert_tag, 1, tag, -1, NULL);
 
@@ -161,13 +161,13 @@ int free_tags(struct request_config* rc) {
 
 int remove_tag(struct request_config* rc, char* tag) {
 	struct tag* last = rc->tags;
-	
+
 	while (last) {
 
 		// check for test
 		if (!strcmp(last->tag, tag)) {
 			free(last->tag);
-			
+
 			if (last->previous && last->next) {
 				last->next->previous = last->previous;
 				last->previous->next = last->next;
@@ -206,24 +206,21 @@ int add_tag(struct request_config* rc, char* tag) {
 
 			last = last->next;
 		}
-	
+
 		last->next = (struct tag*) malloc(sizeof(struct tag));
 		last->next->previous = last;
 		last->next->next = NULL;
-		last->next->tag = (char*) malloc(strlen(tag) + 1);
-		strcpy(last->next->tag, tag);
+		last->next->tag = strdup(tag);
 		insert_tag(rc->log, rc->db, tag);
 	} else {
 		last = (struct tag*) malloc(sizeof(struct tag));
 		last->next = NULL;
 		last->previous = NULL;
-		last->tag = (char*) malloc(strlen(tag) +1);
-		strcpy(last->tag, tag);
+		last->tag = strdup(tag);
 		rc->tags = last;
 		insert_tag(rc->log, rc->db, tag);
 	}
 
-	
 	return 0;
 }
 
@@ -240,8 +237,7 @@ size_t handle_tags(void* data, size_t size, size_t nmemb, void* userp) {
 	}
 
 	do {
-	
-		logprintf(rc->log, LOG_INFO, "Found tag: %s\n", curr);
+		logprintf(rc->log, LOG_DEBUG, "Found tag: %s\n", curr);
 		switch(curr[0]) {
 			case '-':
 				logprintf(rc->log, LOG_DEBUG, "Remove tag: %s\n", curr + 1);
@@ -256,13 +252,12 @@ size_t handle_tags(void* data, size_t size, size_t nmemb, void* userp) {
 				add_tag(rc, curr);
 				break;
 		}
-	} while ((curr = strtok(NULL, "\n"))); 
+	} while ((curr = strtok(NULL, "\n")));
 
 	return size * nmemb;
 }
 
 int get_tags(struct request_config* rc) {
-
 	return 0;
 }
 
@@ -278,7 +273,6 @@ int find_token(char* s, char delim) {
 }
 
 int hash_file(struct request_config* rc) {
-
 	return 0;
 }
 
@@ -298,7 +292,7 @@ int handle_file(struct request_config* rc, char* path) {
 	if (ret != SQLITE_DONE) {
 		logprintf(rc->log, LOG_ERROR, "Error in inserting file: %s\n", sqlite3_errmsg(rc->db));
 	} else {
-		logprintf(rc->log, LOG_INFO, "File (%s) added successfully to database.\n", path);
+		logprintf(rc->log, LOG_DEBUG, "File (%s) added successfully to database.\n", path);
 
 		int file_id = get_file_id(rc->log, rc->tree, path);
 		insert_tagmap(rc->log, rc->db, file_id, rc->tags);
@@ -373,12 +367,15 @@ int ignore_link(char* link) {
 		return 1;
 	}
 
+	if (!strcmp(link, ".dp_files")) {
+		return 1;
+	}
+
 	return 0;
 }
 
 
 size_t handle_request_data(void* data, size_t size, size_t nmemb, void* userp) {
-
 
 	struct request_config* rc = (struct request_config*) userp;
 
@@ -390,7 +387,7 @@ size_t handle_request_data(void* data, size_t size, size_t nmemb, void* userp) {
 
 	snprintf(tags_path, sizeof(tags_path), "%s%s", rc->path, ".dp_tags");
 	// fill tags
-	get_request(rc->log, rc->base, tags_path, handle_tags, userp); 
+	get_request(rc->log, rc->base, tags_path, handle_tags, userp);
 
 	int i = 0;
 
@@ -412,7 +409,7 @@ size_t handle_request_data(void* data, size_t size, size_t nmemb, void* userp) {
 			char link[end + 1];
 			memset(link, 0, end + 1);
 			strncpy(link, current, end);
-			logprintf(rc->log, LOG_INFO, "Link found: %s%s\n", rc->path,link);
+			logprintf(rc->log, LOG_DEBUG, "Link found: %s%s\n", rc->path,link);
 
 			if (!ignore_link(link)) {
 
@@ -457,11 +454,30 @@ int spider_files(LOGGER log, sqlite3* db, int hash, int tree, const char* base) 
 	return status;
 }
 
+
+int mark_as_spidered(LOGGER log, sqlite3* db, int hash, int tree) {
+
+
+	sqlite3_bind_int(stmt_mark_spidered, 1, tree);
+
+	int status = sqlite3_step(stmt_mark_spidered);
+
+	int out = 0;
+	if (status != SQLITE_DONE) {
+		logprintf(log, LOG_ERROR, "Cannot mark tree %d as spidered.\n", tree);
+		out = -1;
+	}
+
+	sqlite3_reset(stmt_mark_spidered);
+	sqlite3_clear_bindings(stmt_mark_spidered);
+	return out;
+}
+
 int spider_tree(LOGGER log, sqlite3* db, int hash, int tree) {
 
 	sqlite3_bind_int(stmt_select_tree, 1, tree);
 
-	int status = sqlite3_step(stmt_select_tree);	
+	int status = sqlite3_step(stmt_select_tree);
 
 	if (status == SQLITE_DONE) {
 		logprintf(log, LOG_WARNING, "Tree with id %d not found.\n", tree);
@@ -477,11 +493,13 @@ int spider_tree(LOGGER log, sqlite3* db, int hash, int tree) {
 	sqlite3_reset(stmt_select_tree);
 	sqlite3_clear_bindings(stmt_select_tree);
 
+	mark_as_spidered(log, db, hash, tree);
+
 	return status;
 }
 
 int spider(LOGGER log, sqlite3* db, int hash, int tree) {
-	
+
 	if (!db) {
 		return 1;
 	}
@@ -507,7 +525,7 @@ int spider(LOGGER log, sqlite3* db, int hash, int tree) {
 		spidered = sqlite3_column_int(stmt_select_trees, 2);
 
 		logprintf(log, LOG_INFO, "Base found: %s\n", base);
-		
+
 		if (!spidered) {
 			if (spider_files(log, db, hash, tree, base) < 0) {
 				return 2;

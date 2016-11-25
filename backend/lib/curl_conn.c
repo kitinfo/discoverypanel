@@ -36,8 +36,12 @@ CURL* c_init(LOGGER log, const char* host, const char* path, int get_body) {
 int curl_perform(LOGGER log, CURL* curl) {
 	CURLcode res = curl_easy_perform(curl);
 
-	/* Check for errors */ 
-	if (res != CURLE_OK) {
+	/* Check for errors */
+	if (res == CURLE_HTTP_RETURNED_ERROR) {
+		long http_code;
+		curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
+		logprintf(log, LOG_INFO, "HTTP Response code: %d\n", http_code);
+	} else if (res != CURLE_OK) {
 		logprintf(log, LOG_ERROR, "curl_easy_perform() failed: %s\n",
 		curl_easy_strerror(res));
 		return 0;
@@ -81,7 +85,7 @@ int check_online(LOGGER log, const char* host, const char* path) {
 		return -1;
 	}
 
-	long status; 
+	long status;
 	CURLcode code = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE , &status);
 
 	if (code != CURLE_OK) {

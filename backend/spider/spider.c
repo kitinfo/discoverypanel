@@ -26,28 +26,26 @@ struct config {
 	int hash;
 	char* dbpath;
 	int tree;
+	char* program_name;
 };
 
 void updater_quit() {
 	QUIT = 1;
 }
 
-int setSleep(int argc, char** argv, void* c) {
-	struct config* config = (struct config*) c;
+int setSleep(int argc, char** argv, struct config* config) {
 	config->sleep = strtoul(argv[1], NULL, 10);
 
 	return 0;
 }
 
-int setDBPath(int argc, char** argv, void* c) {
-	struct config* config = (struct config*) c;
+int setDBPath(int argc, char** argv, struct config* config) {
 	config->dbpath = argv[1];
 
 	return 0;
 }
 
-int setSingle(int argc, char** argv, void* c) {
-	struct config* config = (struct config*) c;
+int setSingle(int argc, char** argv, struct config* config) {
 	config->single = 1;
 
 	return 0;
@@ -65,14 +63,14 @@ int run(LOGGER log, struct config config) {
 	if (config.single) {
 		QUIT = 1;
 	}
-	
 	if (prepare_statements(log, db)) {
 		return 2;
 	}
-	
 	spider(log, db, config.hash, config.tree);
 	while(!QUIT) {
+		begin_transaction(log, db);
 		spider(log, db, config.hash, config.tree);
+		commit_transaction(log, db);
 		sleep(config.sleep);
 	}
 	finalize_statements(log);
@@ -82,40 +80,39 @@ int run(LOGGER log, struct config config) {
 	return 0;
 }
 
-int usage(int argc, char** argv, void* c) {
-	printf("usage:\n");
-	printf("%s [<options>]\n", PROGRAM_NAME);
-	printf("-h, --help\t\tShow this help.\n");
-	printf("-s --single\t\tCheck only one time.\n");
-	printf("-w --wait\t\tSets the wait time for each cycle.\n");
-	printf("-d --dbpath\t\tDatabase path.\n");
+int usage(int argc, char** argv, struct config* config) {
+	printf("usage:\n"
+		"%s [<options>]\n"
+		"    -d, --dbpath <dbpath>         Database path.\n"
+		"    -h, --help                    Show this help.\n"
+		"    -n, --nohash                  Do not hash every file (Hashing is currently not supported).\n"
+		"    -s, --single                  Check only one time.\n"
+		"    -t, --tree   <treeid>         Spider only given tree.\n"
+		"    -v, --verbosity <verbosity>   Set verbosity (0 = Error, 5 = DEBUG).\n"
+		"    -w, --wait   <wait>           Sets the wait time for each cycle.\n", config->program_name);
 	return 1;
 }
 
-int setVerbosity(int argc, char** argv, void* c) {
-	struct config* config = (struct config*) c;
+int setVerbosity(int argc, char** argv, struct config* config) {
 	config->verbosity = strtoul(argv[1], NULL, 10);
 
 	return 0;
 }
 
-int setNoHash(int argc, char** argv, void* c) {
-	struct config* config = (struct config*) c;
+int setNoHash(int argc, char** argv, struct config* config) {
 	config->hash = 0;
 
 	return 0;
 }
 
-int setTree(int argc, char** argv, void* c) {
-
-	struct config* config = (struct config*) c;
+int setTree(int argc, char** argv, struct config* config) {
 	config->tree = strtoul(argv[1], NULL, 10);
 
 	return 0;
 }
 
 int addArgs() {
-	
+
 	eargs_addArgument("-d", "--dbpath", setDBPath, 1);
 	eargs_addArgument("-s", "--single", setSingle, 0);
 	eargs_addArgument("-h", "--help", usage, 0);
@@ -137,12 +134,15 @@ int main(int argc, char* argv[]) {
 		.sleep = 60,
 		.hash = 1,
 		.dbpath = "",
-		.tree = 0
+		.tree = 0,
+		.program_name = argv[0]
 	};
 
 	char* output[argc];
 
-	eargs_parse(argc, argv, output, &config);
+	if (eargs_parse(argc, argv, output, &config) < 0) {
+		return 1;
+	}
 
 	LOGGER log = {
 		.stream = stderr,

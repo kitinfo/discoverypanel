@@ -1,0 +1,210 @@
+==10498== Memcheck, a memory error detector
+==10498== Copyright (C) 2002-2013, and GNU GPL'd, by Julian Seward et al.
+==10498== Using Valgrind-3.10.1 and LibVEX; rerun with -h for copyright info
+==10498== Command: ./spider -v 3 --dbpath ../updater.db3 -t 1 -s
+==10498== 
+Statement (SELECT file_id FROM files WHERE path = ? AND tree_id = ?) compiled ok
+Statement (INSERT OR IGNORE INTO tags (tag_text) VALUES(?)) compiled ok
+Statement (INSERT OR IGNORE INTO tagmap (file, tag) VALUES (?, (SELECT tag_id FROM tags WHERE tag_text = ?))) compiled ok
+Statement (UPDATE OR IGNORE files SET hash = ? WHERE tree_id = ? AND path = ?) compiled ok
+Statement (INSERT OR IGNORE INTO files (tree_id, path, status) VALUES(?, ?, ?)) compiled ok
+Statement (SELECT id, base, spidered FROM trees) compiled ok
+Statement (SELECT base FROM trees WHERE id = ?) compiled ok
+Base found: http://localhost/files/
+output: <?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head>
+<title>Index of /files/</title>
+<style type="text/css">
+a, a:active {text-decoration: none; color: blue;}
+a:visited {color: #48468F;}
+a:hover, a:focus {text-decoration: underline; color: red;}
+body {background-color: #F5F5F5;}
+h2 {margin-bottom: 12px;}
+table {margin-left: 12px;}
+th, td { font: 90% monospace; text-align: left;}
+th { font-weight: bold; padding-right: 14px; padding-bottom: 3px;}
+td {padding-right: 14px;}
+td.s, th.s {text-align: right;}
+div.list { background-color: white; border-top: 1px solid #646464; border-bottom: 1px solid #646464; padding-top: 10px; padding-bottom: 14px;}
+div.foot { font: 90% monospace; color: #787878; padding-top: 4px;}
+</style>
+</head>
+<body>
+<h2>Index of /files/</h2>
+<div class="list">
+<table summary="Directory Listing" cellpadding="0" cellspacing="0">
+<thead><tr><th class="n">Name</th><th class="m">Last Modified</th><th class="s">Size</th><th class="t">Type</th></tr></thead>
+<tbody>
+<tr><td class="n"><a href="../">Parent Directory</a>/</td><td class="m">&nbsp;</td><td class="s">- &nbsp;</td><td class="t">Directory</td></tr>
+<tr><td class="n"><a href="atc/">atc</a>/</td><td class="m">2015-Sep-07 16:46:02</td><td class="s">- &nbsp;</td><td class="t">Directory</td></tr>
+<tr><td class="n"><a href=".dp_tags">.dp_tags</a></td><td class="m">2015-Sep-07 15:10:30</td><td class="s">0.1K</td><td class="t">application/octet-stream</td></tr>
+<tr><td class="n"><a href="Funk_Flizer.tar">Funk_Flizer.tar</a></td><td class="m">2015-Aug-12 21:27:53</td><td class="s">122.6M</td><td class="t">application/x-tar</td></tr>
+<tr><td class="n"><a href="anno1701.tar">anno1701.tar</a></td><td class="m">2015-Aug-16 22:27:28</td><td class="s">2.9G</td><td class="t">application/x-tar</td></tr>
+<tr><td class="n"><a href="atc_data.db3">atc_data.db3</a></td><td class="m">2014-Dec-28 23:39:11</td><td class="s">60.9M</td><td class="t">application/octet-stream</td></tr>
+<tr><td class="n"><a href="big_pharma_linux_1.00.04.gz">big_pharma_linux_1.00.04.gz</a></td><td class="m">2015-Aug-30 15:53:41</td><td class="s">304.2M</td><td class="t">application/octet-stream</td></tr>
+<tr><td class="n"><a href="factorio_alpha_x64_0.11.22.tar.gz">factorio_alpha_x64_0.11.22.tar.gz</a></td><td class="m">2015-May-09 20:25:37</td><td class="s">163.6M</td><td class="t">application/octet-stream</td></tr>
+<tr><td class="n"><a href="heavy_bullets.tar">heavy_bullets.tar</a></td><td class="m">2015-Jul-03 16:27:56</td><td class="s">206.4M</td><td class="t">application/x-tar</td></tr>
+<tr><td class="n"><a href="test.file">test.file</a></td><td class="m">2014-Nov-21 13:40:17</td><td class="s">0.0K</td><td class="t">application/octet-stream</td></tr>
+</tbody>
+</table>
+</div>
+<div class="foot">lighty</div>
+</body>
+</html>
+
+Found tag: +test
+Add tag: test
+Insert tag: test
+Current tag size: 1
+Link found: ../
+Found the parent link, ignore.
+Link found: atc/
+Not the parent link.
+Last character: /
+Link is a directory.
+output: <?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head>
+<title>Index of /files/atc/</title>
+<style type="text/css">
+a, a:active {text-decoration: none; color: blue;}
+a:visited {color: #48468F;}
+a:hover, a:focus {text-decoration: underline; color: red;}
+body {background-color: #F5F5F5;}
+h2 {margin-bottom: 12px;}
+table {margin-left: 12px;}
+th, td { font: 90% monospace; text-align: left;}
+th { font-weight: bold; padding-right: 14px; padding-bottom: 3px;}
+td {padding-right: 14px;}
+td.s, th.s {text-align: right;}
+div.list { background-color: white; border-top: 1px solid #646464; border-bottom: 1px solid #646464; padding-top: 10px; padding-bottom: 14px;}
+div.foot { font: 90% monospace; color: #787878; padding-top: 4px;}
+</style>
+</head>
+<body>
+<h2>Index of /files/atc/</h2>
+<div class="list">
+<table summary="Directory Listing" cellpadding="0" cellspacing="0">
+<thead><tr><th class="n">Name</th><th class="m">Last Modified</th><th class="s">Size</th><th class="t">Type</th></tr></thead>
+<tbody>
+<tr><td class="n"><a href="../">Parent Directory</a>/</td><td class="m">&nbsp;</td><td class="s">- &nbsp;</td><td class="t">Directory</td></tr>
+<tr><td class="n"><a href=".dp_tags">.dp_tags</a></td><td class="m">2015-Sep-07 16:46:02</td><td class="s">0.1K</td><td class="t">application/octet-stream</td></tr>
+<tr><td class="n"><a href="atc_data-old.db3">atc_data-old.db3</a></td><td class="m">2014-Dec-30 03:27:07</td><td class="s">60.9M</td><td class="t">application/octet-stream</td></tr>
+<tr><td class="n"><a href="atc_data-test.db3">atc_data-test.db3</a></td><td class="m">2014-Dec-30 03:27:07</td><td class="s">19.0K</td><td class="t">application/octet-stream</td></tr>
+<tr><td class="n"><a href="atc_data.2014-12-29.db3">atc_data.2014-12-29.db3</a></td><td class="m">2014-Dec-30 03:27:07</td><td class="s">11.9M</td><td class="t">application/octet-stream</td></tr>
+<tr><td class="n"><a href="atc_data.db3">atc_data.db3</a></td><td class="m">2014-Dec-30 03:27:07</td><td class="s">15.6M</td><td class="t">application/octet-stream</td></tr>
+</tbody>
+</table>
+</div>
+<div class="foot">lighty</div>
+</body>
+</html>
+
+Found tag: -test
+Remove tag: test
+Found tag: +atc
+Add tag: atc
+Insert tag: atc
+Current tag size: 1
+Link found: atc/../
+Found the parent link, ignore.
+Link found: atc/.dp_tags
+Found the parent link, ignore.
+Link found: atc/atc_data-old.db3
+Not the parent link.
+Last character: 3
+Link is a file.
+File (atc/atc_data-old.db3) added successfully to database.
+File found with id: 8710
+Add tagmap: (8710, atc)
+Link found: atc/atc_data-test.db3
+Not the parent link.
+Last character: 3
+Link is a file.
+File (atc/atc_data-test.db3) added successfully to database.
+File found with id: 8711
+Add tagmap: (8711, atc)
+Link found: atc/atc_data.2014-12-29.db3
+Not the parent link.
+Last character: 3
+Link is a file.
+File (atc/atc_data.2014-12-29.db3) added successfully to database.
+File found with id: 8712
+Add tagmap: (8712, atc)
+Link found: atc/atc_data.db3
+Not the parent link.
+Last character: 3
+Link is a file.
+File (atc/atc_data.db3) added successfully to database.
+File found with id: 8713
+Add tagmap: (8713, atc)
+Link found: .dp_tags
+Found the parent link, ignore.
+Link found: Funk_Flizer.tar
+Not the parent link.
+Last character: r
+Link is a file.
+File (Funk_Flizer.tar) added successfully to database.
+File found with id: 8714
+Add tagmap: (8714, test)
+Link found: anno1701.tar
+Not the parent link.
+Last character: r
+Link is a file.
+File (anno1701.tar) added successfully to database.
+File found with id: 8715
+Add tagmap: (8715, test)
+Link found: atc_data.db3
+Not the parent link.
+Last character: 3
+Link is a file.
+File (atc_data.db3) added successfully to database.
+File found with id: 8716
+Add tagmap: (8716, test)
+Link found: big_pharma_linux_1.00.04.gz
+Not the parent link.
+Last character: z
+Link is a file.
+File (big_pharma_linux_1.00.04.gz) added successfully to database.
+File found with id: 8717
+Add tagmap: (8717, test)
+Link found: factorio_alpha_x64_0.11.22.tar.gz
+Not the parent link.
+Last character: z
+Link is a file.
+File (factorio_alpha_x64_0.11.22.tar.gz) added successfully to database.
+File found with id: 8718
+Add tagmap: (8718, test)
+Link found: heavy_bullets.tar
+Not the parent link.
+Last character: r
+Link is a file.
+File (heavy_bullets.tar) added successfully to database.
+File found with id: 8719
+Add tagmap: (8719, test)
+Link found: test.file
+Not the parent link.
+Last character: e
+Link is a file.
+File (test.file) added successfully to database.
+File found with id: 8720
+Add tagmap: (8720, test)
+==10498== 
+==10498== HEAP SUMMARY:
+==10498==     in use at exit: 328 bytes in 11 blocks
+==10498==   total heap usage: 4,842 allocs, 4,831 frees, 732,890 bytes allocated
+==10498== 
+==10498== LEAK SUMMARY:
+==10498==    definitely lost: 0 bytes in 0 blocks
+==10498==    indirectly lost: 0 bytes in 0 blocks
+==10498==      possibly lost: 0 bytes in 0 blocks
+==10498==    still reachable: 328 bytes in 11 blocks
+==10498==         suppressed: 0 bytes in 0 blocks
+==10498== Reachable blocks (those to which a pointer was found) are not shown.
+==10498== To see them, rerun with: --leak-check=full --show-leak-kinds=all
+==10498== 
+==10498== For counts of detected and suppressed errors, rerun with: -v
+==10498== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)

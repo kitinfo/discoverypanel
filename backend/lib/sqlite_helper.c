@@ -2,6 +2,8 @@
 #include <sqlite3.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
+
 #include "logger.h"
 
 void sqlite_service_close(LOGGER log, sqlite3* db) {
@@ -32,6 +34,31 @@ void finalize_statement(LOGGER log, sqlite3_stmt* stmt) {
 	}
 }
 
+int busy_handler(void* c, int count) {
+	sleep(count);
+
+	return count < 10;
+}
+
+
+int begin_transaction(LOGGER log, sqlite3* db) {
+	return sqlite3_exec(db, "BEGIN TRANSACTION;", NULL, NULL, NULL);
+}
+
+int commit_transaction(LOGGER log, sqlite3* db) {
+	return sqlite3_exec(db, "COMMIT;", NULL, NULL, NULL);
+}
+
+int check_wal(void* c, int columns, char** results, char** column_names) {
+	LOGGER* log = (LOGGER*) c;
+	int i;
+	for (i = 0; i < columns; i++) {
+		logprintf(*log, LOG_INFO, "%s:%s\n", column_names[i], results[i]);
+	}
+
+	return 0;
+}
+
 sqlite3* sqlite_service_connect(LOGGER log, char* dbpath) {
 
 	sqlite3* db;
@@ -45,12 +72,12 @@ sqlite3* sqlite_service_connect(LOGGER log, char* dbpath) {
 	rc = sqlite3_open_v2(dbpath, &db, SQLITE_OPEN_READWRITE, NULL);
 
 	if (rc != SQLITE_OK) {
-		logprintf(log, LOG_ERROR, "%s\n", sqlite3_errmsg(db));	
+		logprintf(log, LOG_ERROR, "%s\n", sqlite3_errmsg(db));
 		return NULL;
 	}
 
 	const char* sql = "PRAGMA foreign_keys = ON";
-	
+
 	switch(sqlite3_exec(db, sql, NULL, NULL, NULL)) {
 		case SQLITE_OK:
 		case SQLITE_DONE:
@@ -60,6 +87,8 @@ sqlite3* sqlite_service_connect(LOGGER log, char* dbpath) {
 			sqlite_service_close(log, db);
 			return NULL;
 	}
+	sqlite3_busy_handler(db, busy_handler, NULL);
+	sqlite3_exec(db, "PRAGMA journal_mode=WAL", check_wal, &log, NULL);
 
 	return db;
 }
